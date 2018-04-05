@@ -3,6 +3,7 @@ import fs = require("fs");
 import readline = require("readline");
 
 const appStateFile = "./appState.json";
+const resultFolder = "./results/";
 
 const loginWithAppState = (appState: any, tag: string): void => {
     login({appState}, (err: FacebookChatApi.IError, api: FacebookChatApi.Api) => {
@@ -22,12 +23,27 @@ const searchMessages = (api: FacebookChatApi.Api, tag: string): void => {
                 return console.error(err);
             }
 
+            const searchResult = [];
             for (const message of history) {
                 if (message.body && message.body.indexOf(tag) === 0) {
-                    console.log(message.body);
+                    searchResult.push(message.body);
                 }
             }
+
+            saveResult(tag, searchResult);
         });
+};
+
+const saveResult = (tag: string, searchResult: string[]): void => {
+    const resultFile = `${resultFolder}${tag}.json`;
+
+    fs.writeFile(resultFile, JSON.stringify(searchResult), (err) => {
+        if (err) {
+            console.error(err);
+        }
+
+        console.log("\x1b[32m%s\x1b[0m", `Result saved in ${resultFile}`);
+    });
 };
 
 const askForTag = (appState: any): void => {

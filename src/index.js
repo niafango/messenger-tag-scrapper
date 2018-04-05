@@ -4,6 +4,7 @@ var login = require("facebook-chat-api");
 var fs = require("fs");
 var readline = require("readline");
 var appStateFile = "./appState.json";
+var resultFolder = "./results/";
 var loginWithAppState = function (appState, tag) {
     login({ appState: appState }, function (err, api) {
         if (err) {
@@ -19,12 +20,23 @@ var searchMessages = function (api, tag) {
         if (err) {
             return console.error(err);
         }
+        var searchResult = [];
         for (var _i = 0, history_1 = history; _i < history_1.length; _i++) {
             var message = history_1[_i];
             if (message.body && message.body.indexOf(tag) === 0) {
-                console.log(message.body);
+                searchResult.push(message.body);
             }
         }
+        saveResult(tag, searchResult);
+    });
+};
+var saveResult = function (tag, searchResult) {
+    var resultFile = "" + resultFolder + tag + ".json";
+    fs.writeFile(resultFile, JSON.stringify(searchResult), function (err) {
+        if (err) {
+            console.error(err);
+        }
+        console.log("\x1b[32m%s\x1b[0m", "Result saved in " + resultFile);
     });
 };
 var askForTag = function (appState) {

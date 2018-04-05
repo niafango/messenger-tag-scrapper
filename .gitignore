@@ -1,5 +1,6 @@
 # Project specifics
 appState.json
+results/
 
 # Logs
 logs
