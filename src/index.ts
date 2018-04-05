@@ -1,27 +1,33 @@
-import readline = require("readline");
+import login = require("facebook-chat-api");
 import fs = require("fs");
+import readline = require("readline");
 
 const appStateFile = "./appState.json";
 
-import login = require('facebook-chat-api');
-
-const search = function(appState: any) {
-    login({appState: appState}, (err: FacebookChatApi.IError, api: FacebookChatApi.Api) => {
-        if(err) {
+const search = (appState: any) => {
+    login({appState}, (err: FacebookChatApi.IError, api: FacebookChatApi.Api) => {
+        if (err) {
             console.log("\x1b[31m%s\x1b[0m", "Your are not connected anymore, please connect again.");
             generateConfig(true);
+            return;
         }
-
-        api.getThreadHistory("1548318388598682", 100, Date.now(), (err: FacebookChatApi.IError, history: FacebookChatApi.IThreadHistoryMessage[]) => {
-            if(err) return console.error(err);
-        });
+        getMessage(api);
     });
 };
 
-const generateConfig = function(firstTime = true) {
+const getMessage = (api: FacebookChatApi.Api) => {
+    api.getThreadHistory("1548318388598682", 15000, undefined,
+        (err: FacebookChatApi.IError, history: FacebookChatApi.IThreadHistoryMessage[]) => {
+            if (err) {
+                return console.error(err);
+            }
+        });
+};
+
+const generateConfig = (firstTime = true) => {
     const rl = readline.createInterface({
         input: process.stdin,
-        output: process.stdout
+        output: process.stdout,
     });
 
     if (firstTime) {
@@ -32,22 +38,29 @@ const generateConfig = function(firstTime = true) {
         rl.question("What's your Facebook password ? ", (password: string) => {
             rl.close();
 
-            login({email: email, password: password}, function (err: FacebookChatApi.IError, api: FacebookChatApi.Api) {
+            login({email, password}, (err: FacebookChatApi.IError, api: FacebookChatApi.Api) => {
                 if (err) {
                     console.log("\x1b[31m%s\x1b[0m", "Failed to authenticate you, trying again.");
                     generateConfig(false);
                 } else {
-                    const appState = api.getAppState();
-                    fs.writeFile(appStateFile, JSON.stringify(appState), function(err) {
-                        if (err) console.error(err);
-
-                        console.log("\x1b[32m%s\x1b[0m", "appState.json generated !");
-                        search(appState);
-                    });
+                    writeConfig(api);
                 }
             });
         });
     });
+};
+
+const writeConfig = (api: FacebookChatApi.Api) => {
+    const appState = api.getAppState();
+    fs.writeFile(appStateFile, JSON.stringify(appState), (err) => {
+        if (err) {
+            console.error(err);
+        }
+
+        console.log("\x1b[32m%s\x1b[0m", "appState.json generated !");
+        search(appState);
+    });
+
 };
 
 if (fs.existsSync(appStateFile) && fs.lstatSync(appStateFile).isFile()) {
