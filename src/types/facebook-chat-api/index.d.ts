@@ -241,6 +241,11 @@ declare namespace FacebookChatApi {
 
     class Api {
         /**
+         * Returns current appState which can be saved to a file or stored in a variable.
+         */
+        public getAppState(): any;
+
+        /**
          * Get `amount` of messages from `threadID` starting from messages posted at `timestamp`
          * If you're getting a 500 error, it's possible that you're requesting too many messages. Try reducing that number and see if that works.
          *
