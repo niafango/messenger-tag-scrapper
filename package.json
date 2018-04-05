@@ -2,7 +2,7 @@
   "name": "messenger-tag-scrapper",
   "version": "1.0.0",
   "description": "A Facebook Messenger scrapper (using the non-official facebook messenger API https://github.com/Schmavery/facebook-chat-api) which retrieve every messages marked with a specific tag",
-  "main": "index.js",
+  "main": "src/index",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
