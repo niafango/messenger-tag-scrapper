@@ -4,27 +4,45 @@ import readline = require("readline");
 
 const appStateFile = "./appState.json";
 
-const search = (appState: any) => {
+const loginWithAppState = (appState: any, tag: string): void => {
     login({appState}, (err: FacebookChatApi.IError, api: FacebookChatApi.Api) => {
         if (err) {
             console.log("\x1b[31m%s\x1b[0m", "Your are not connected anymore, please connect again.");
             generateConfig(true);
             return;
         }
-        getMessage(api);
+        searchMessages(api, tag);
     });
 };
 
-const getMessage = (api: FacebookChatApi.Api) => {
+const searchMessages = (api: FacebookChatApi.Api, tag: string): void => {
     api.getThreadHistory("1548318388598682", 15000, undefined,
         (err: FacebookChatApi.IError, history: FacebookChatApi.IThreadHistoryMessage[]) => {
             if (err) {
                 return console.error(err);
             }
+
+            for (const message of history) {
+                if (message.body && message.body.indexOf(tag) === 0) {
+                    console.log(message.body);
+                }
+            }
         });
 };
 
-const generateConfig = (firstTime = true) => {
+const askForTag = (appState: any): void => {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+
+    rl.question("What tag do you want to search for ? ", (tag: string) => {
+        rl.close();
+        loginWithAppState(appState, tag);
+    });
+};
+
+const generateConfig = (firstTime = true): void => {
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
@@ -50,7 +68,7 @@ const generateConfig = (firstTime = true) => {
     });
 };
 
-const writeConfig = (api: FacebookChatApi.Api) => {
+const writeConfig = (api: FacebookChatApi.Api): void => {
     const appState = api.getAppState();
     fs.writeFile(appStateFile, JSON.stringify(appState), (err) => {
         if (err) {
@@ -58,7 +76,7 @@ const writeConfig = (api: FacebookChatApi.Api) => {
         }
 
         console.log("\x1b[32m%s\x1b[0m", "appState.json generated !");
-        search(appState);
+        askForTag(appState);
     });
 
 };
@@ -67,7 +85,7 @@ if (fs.existsSync(appStateFile) && fs.lstatSync(appStateFile).isFile()) {
     const appState = JSON.parse(fs.readFileSync(appStateFile, {encoding: "utf8"}));
 
     if (appState) {
-        search(appState);
+        askForTag(appState);
     }
 } else {
     generateConfig();

@@ -4,21 +4,37 @@ var login = require("facebook-chat-api");
 var fs = require("fs");
 var readline = require("readline");
 var appStateFile = "./appState.json";
-var search = function (appState) {
+var loginWithAppState = function (appState, tag) {
     login({ appState: appState }, function (err, api) {
         if (err) {
             console.log("\x1b[31m%s\x1b[0m", "Your are not connected anymore, please connect again.");
             generateConfig(true);
             return;
         }
-        getMessage(api);
+        searchMessages(api, tag);
     });
 };
-var getMessage = function (api) {
+var searchMessages = function (api, tag) {
     api.getThreadHistory("1548318388598682", 15000, undefined, function (err, history) {
         if (err) {
             return console.error(err);
         }
+        for (var _i = 0, history_1 = history; _i < history_1.length; _i++) {
+            var message = history_1[_i];
+            if (message.body && message.body.indexOf(tag) === 0) {
+                console.log(message.body);
+            }
+        }
+    });
+};
+var askForTag = function (appState) {
+    var rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+    rl.question("What tag do you want to search for ? ", function (tag) {
+        rl.close();
+        loginWithAppState(appState, tag);
     });
 };
 var generateConfig = function (firstTime) {
@@ -52,13 +68,13 @@ var writeConfig = function (api) {
             console.error(err);
         }
         console.log("\x1b[32m%s\x1b[0m", "appState.json generated !");
-        search(appState);
+        askForTag(appState);
     });
 };
 if (fs.existsSync(appStateFile) && fs.lstatSync(appStateFile).isFile()) {
     var appState = JSON.parse(fs.readFileSync(appStateFile, { encoding: "utf8" }));
     if (appState) {
-        search(appState);
+        askForTag(appState);
     }
 }
 else {
