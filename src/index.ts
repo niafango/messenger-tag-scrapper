@@ -1,22 +1,39 @@
 import login = require("facebook-chat-api");
 import fs = require("fs");
 import readline = require("readline");
+import IThreadInfo = FacebookChatApi.IThreadInfo;
+import OutputID = FacebookChatApi.OutputID;
 
 const appStateFile = "./appState.json";
 const resultFolder = "./results/";
 
-const loginWithAppState = (appState: any, tag: string): void => {
+const loginWithAppState = (appState: any): void => {
     login({appState}, (err: FacebookChatApi.IError, api: FacebookChatApi.Api) => {
         if (err) {
             console.log("\x1b[31m%s\x1b[0m", "Your are not connected anymore, please connect again.");
             generateConfig(true);
             return;
         }
-        searchMessages(api, tag);
+        askForThreadName(api);
     });
 };
 
-const searchMessages = (api: FacebookChatApi.Api, tag: string): void => {
+const searchThread = (api: FacebookChatApi.Api, threadName: string): void => {
+    api.getThreadList(50, null, ["INBOX"],
+        (err: FacebookChatApi.IError, list: FacebookChatApi.IThreadInfo[]) => {
+            const thread = list.find((value: IThreadInfo): boolean => {
+                return (value.name != null && value.name.toLowerCase().indexOf(threadName.toLowerCase()) !== -1);
+            });
+            if (thread == null || thread.threadID == null) {
+                console.log("\x1b[31m%s\x1b[0m", "Unable to find this thread, please type its name again.");
+                askForThreadName(api);
+                return;
+            }
+            askForTag(api, thread.threadID);
+        });
+};
+
+const searchMessages = (api: FacebookChatApi.Api, threadID: OutputID, tag: string): void => {
     api.getThreadHistory("1548318388598682", 15000, undefined,
         (err: FacebookChatApi.IError, history: FacebookChatApi.IThreadHistoryMessage[]) => {
             if (err) {
@@ -46,7 +63,7 @@ const saveResult = (tag: string, searchResult: string[]): void => {
     });
 };
 
-const askForTag = (appState: any): void => {
+const askForTag = (api: FacebookChatApi.Api, threadID: OutputID): void => {
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
@@ -54,7 +71,19 @@ const askForTag = (appState: any): void => {
 
     rl.question("What tag do you want to search for ? ", (tag: string) => {
         rl.close();
-        loginWithAppState(appState, tag);
+        searchMessages(api, threadID, tag);
+    });
+};
+
+const askForThreadName = (api: FacebookChatApi.Api): void => {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+
+    rl.question("In what thread do you want to search for a tag ? ", (threadName: string) => {
+        rl.close();
+        searchThread(api, threadName);
     });
 };
 
@@ -92,7 +121,7 @@ const writeConfig = (api: FacebookChatApi.Api): void => {
         }
 
         console.log("\x1b[32m%s\x1b[0m", "appState.json generated !");
-        askForTag(appState);
+        loginWithAppState(appState);
     });
 
 };
@@ -101,7 +130,7 @@ if (fs.existsSync(appStateFile) && fs.lstatSync(appStateFile).isFile()) {
     const appState = JSON.parse(fs.readFileSync(appStateFile, {encoding: "utf8"}));
 
     if (appState) {
-        askForTag(appState);
+        loginWithAppState(appState);
     }
 } else {
     generateConfig();

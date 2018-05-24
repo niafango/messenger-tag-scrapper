@@ -76,6 +76,85 @@ declare namespace FacebookChatApi {
         timestamp: number;
     }
 
+    interface Nickname {
+        userId: OutputID;
+        nickname: string
+    }
+
+    type Gender = "MALE" | "FEMALE" | "NEUTER" | "UNKNOWN";
+
+    type Folder = "INBOX" | "ARCHIVED" | "PENDING " | "OTHER" | "unread";
+
+    type AccountType = "User" | "Page" | "UnavailableMessagingActor" | "ReducedMessagingActor";
+
+    interface Participant {
+        accountType: AccountType
+        userId: OutputID;
+        name: string;
+        url: string | null;
+        profilePicture: string;
+        username: string | null;
+        isMessageBlockedByViewer: boolean;
+    }
+
+    interface User extends Participant {
+        shortName: string;
+        gender: Gender;
+        url: string;
+        isViewerFriend: boolean;
+        isMessengerUser: boolean;
+        isVerified: boolean;
+        isViewerCoworker: boolean;
+    }
+
+    interface Page extends Participant {
+        url: string;
+        acceptsMessengerUserFeedback: boolean;
+        isMessengerUser: boolean;
+        isVerified: boolean;
+        isMessengerPlatformBot: boolean;
+    }
+
+    interface ReducedMessagingActor extends Participant {
+        url: null;
+        acceptsMessengerUserFeedback: boolean;
+    }
+
+    interface UnavailableMessagingActor extends Participant {
+        url: null;
+        username: null;
+        acceptsMessengerUserFeedback: boolean;
+    }
+
+    interface IThreadInfo {
+        threadID: OutputID;
+        name: string;
+        unreadCount: number;
+        messageCount: number;
+        imageSrc?: string;
+        emoji?: string;
+        color?: string;
+        nicknames?: Array<Nickname>;
+        muteUntil?: number;
+        participants: Array<User | Page | ReducedMessagingActor | UnavailableMessagingActor>;
+        adminIds: Array<OutputID>;
+        folder: Folder;
+        isGroup: boolean;
+        customizationEnabled: boolean;
+        participantAddMode?: "ADD";
+        reactionsMuteMode: "REACTIONS_NOT_MUTED" | "REACTIONS_MUTED";
+        mentionsMuteMode: "MENTIONS_NOT_MUTED" | "MENTIONS_MUTED";
+        isArchived: boolean;
+        isSubscribed: boolean;
+        timestamp: number;
+        snippet: string;
+        snippetAttachments: Array<IAttachment>;
+        snippedSender: OutputID;
+        lastMessageTimestamp: number;
+        lastReadTimestamp?: number;
+        cannotReplyReason?: "RECIPIENTS_NOT_LOADABLE" | "BLOCKED";
+    }
+
     type AttachmentType = "sticker" | "file" | "photo" | "animated_image" | "share" | "video";
 
     interface IAttachment {
@@ -258,6 +337,23 @@ declare namespace FacebookChatApi {
          * @param callback -If error is null, history will contain an array of message objects.
          */
         public getThreadHistory(threadID: string, amount: number, timestamp: number | undefined, callback: (err: IError, history: IThreadHistoryMessage[]) => void): void;
+
+        /**
+         * returns information about threads
+         * @param limit - Limit the number of threads to fetch.
+         * @param timestamp - Request threads before this date. null means now
+         * @param tags - An array describing which folder to fetch. It should be one of these:
+         *      - ["INBOX"] (same as [])
+         *      - ["ARCHIVED"]
+         *      - ["PENDING"]
+         *      - ["OTHER"]
+         *      - ["INBOX", "unread"]
+         *      - ["ARCHIVED", "unread"]
+         *      - ["PENDING", "unread"]
+         *      - ["OTHER", "unread"]
+         * @param callback - Callback called when the query is done (either with an error or with a proper result)
+         */
+        public getThreadList(limit: number, timestamp: number | null, tags: Array<Folder>, callback: (err: IError, list: Array<IThreadInfo>) => void): void;
 
         /**
          * Logs out the current user.
